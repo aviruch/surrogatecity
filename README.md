@@ -1,8 +1,5 @@
 # Surrogate City Finder — Python (Flask) Port
 
-A literal port of the original PHP project to Python. The frontend (HTML + jQuery +
-Google Maps) is unchanged; only the four PHP backend files were rewritten as Flask
-routes.
 
 ## Project layout
 
