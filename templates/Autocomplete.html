@@ -1,0 +1,46 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
+<head profile="http://gmpg.org/xfn/11">
+<title>Surrogate City Finder</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+<link rel="stylesheet" href="styles/layout.css" type="text/css" />
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC2J30vnLOHzySl2hM9Fvxp0W_O0qQpNoI&sensor=false&libraries=places&language=en"></script>
+</head>
+  
+  <body>
+  <div class="wrapper col3" style="margin-bottom:10px;margin-top:10%;height:200px">
+  
+  <div id="intro">
+    <div class="fl_left" style="width:100%">
+    <h2 id="city">Surrogate City Finder</h2>
+  <div style="float:left;width:100%;margin-top:50px;">    
+      <p class="readmore" style="text-align:left;">
+        <input type="text" id="cityname" style="width:50%;margin-left:25%;height:30px;border-radius:5px;background-color:#707070;color:#FFFFFF;border:none;padding:5px;font-size:20px;" />  
+    
+</div>  
+ 
+ 
+ </div>
+        <br class="clear" />
+  </div>
+</div>
+
+    <script>
+      var input = document.getElementById('cityname');
+      var autocomplete = new google.maps.places.Autocomplete(input,{types: ['(cities)']});
+      google.maps.event.addListener(autocomplete, 'place_changed', function(){
+         var place = autocomplete.getPlace();
+      })
+    </script>
+  </body>
+</html>
+
+
+
+
+

@@ -1,0 +1,1003 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
+<head profile="http://gmpg.org/xfn/11">
+<title>Surrogate City Finder</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+<link rel="stylesheet" href="styles/layout.css" type="text/css" />
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC2J30vnLOHzySl2hM9Fvxp0W_O0qQpNoI&sensor=false&libraries=places&language=en"></script>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<style>
+
+.pac-icon,.pac-icon-marker
+{
+	visibility:hidden;
+}
+#ms
+{
+	cursor:pointer;
+}
+.on
+{
+	cursor:pointer;
+}
+tr:hover {
+  background-color: grey;
+}
+.active 
+{
+background-color: green;
+}
+</style>
+
+
+
+</head>
+<script language="javascript" type="text/javascript">
+  $(window).load(function() {
+    $('#loading').hide();
+  });
+</script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script src="a.js"></script>
+
+  
+<script type="text/javascript" src="jquery-latest.js"></script> 
+<script type="text/javascript" src="jquery.tablesorter.js"></script> 
+<script >
+
+		$(document).ready(function() 
+		{ 
+			//$("#myTable").tablesorter();
+			$("#ms").click(function(){
+				var hh=parseFloat(document.getElementById("place").style.height);
+					if(hh<200)
+				{
+  				  $("#place").animate({height:'335px'},750);
+					//document.getElementById("map").style.marginTop="375px";	
+					}
+					else
+{
+
+  				  $("#place").animate({height:'80px'},200);
+					//document.getElementById("map").style.marginTop="80px";	
+	
+}
+ 				 });
+
+
+
+
+
+ 
+		} 
+		);
+
+
+	</script>
+<style >
+		table.tablesorter {
+			
+		}
+		table.tablesorter th {
+		background-image: url(bg.png);
+		background-repeat: no-repeat;
+		color:#000000;
+			
+		}
+		table.tablesorter td {
+			
+		}
+		
+		
+		table.tablesorter .headerSortUp {
+			background-image: url(asc.png);
+			background-repeat: no-repeat;
+		}
+		table.tablesorter .headerSortDown {
+			background-image: url(desc.png);
+			background-repeat: no-repeat;
+			}</style>
+
+<style>
+
+
+
+#loading {
+  width: 100%;
+  height: 100%;
+  top: 0px;
+  left: 0px;
+  position: fixed;
+  display: block;
+  opacity: 0.7;
+  background-color: #fff;
+  z-index: 99;
+  text-align: center;
+}
+
+#loading-image {
+  position: absolute;
+  top: 100px;
+  left: 240px;
+  z-index: 100;
+}
+
+
+
+</style>
+
+
+
+<script type="text/javascript">
+
+
+
+function parselat(val,fl)
+{
+
+	val=parseFloat(val);
+	
+	var pf=0;
+	if(val<0)
+	{
+		pf=1;
+		val=val*-1;
+	}
+	
+	var vi=(parseInt(val));
+	var main=parseFloat((val-vi)*60.0/100.0);
+	vi=vi+main;
+	vi=Math.round(vi * 100) / 100;
+	//alert(vi);
+	if(pf==0 && fl==0)
+	{
+		vi=vi+"&deg;N";
+	}
+	if(pf==0 && fl==1)
+	{
+		vi=vi+"&deg;E";
+	}
+	if(pf==1 && fl==0)
+	{
+		vi=vi+"&deg;S";
+	}
+	if(pf==1 && fl==1)
+	{
+		vi=vi+"&deg;W";
+	}
+
+	return vi;
+}
+
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    var tt=decodeURIComponent(results[1].replace(/\+/g, " "));
+	tt=tt.split("?")[0];
+	return tt;
+}
+
+
+function calcu()
+{
+	document.getElementById("cityname").value=getParameterByName('text');
+	var country=getParameterByName('country');;
+	var state=getParameterByName('state');;
+	var city=getParameterByName('city');;
+
+	document.getElementById("latrange").value=getParameterByName('ltrange');
+	
+document.getElementById("altrange").value=getParameterByName('altrange');
+	document.getElementById("maxtemp").value=getParameterByName('maxtemp');
+	document.getElementById("mintemp").value=getParameterByName('mintemp');
+	document.getElementById("radrange").value=getParameterByName('radrange');
+
+
+
+	//alert(city);
+        var lat=parselat(parseFloat(getParameterByName('lat')),0);
+	var long=parselat(parseFloat(getParameterByName('lng')),1);
+	var alt=ele(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')));
+	alt=Math.round(alt * 100) / 100;
+	document.getElementById("city").innerHTML=city+" , "+country+" &nbsp; " ;
+	document.getElementById("latitude").innerHTML=" "+lat+","+long+" &nbsp;&nbsp;"+alt+" Meters" ;
+
+	var tt=getdata(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),alt);
+	climatedata=gowiki(city);
+	drawmainmap(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),tt,climatedata);
+   
+
+	
+}
+
+   
+
+var placeSearch, autocomplete;
+var componentForm = {
+  street_number: 'short_name',
+  route: 'long_name',
+  locality: 'long_name',
+  administrative_area_level_1: 'short_name',
+  country: 'long_name',
+  postal_code: 'short_name'
+};
+var climatedata;
+function initialize() {
+	  
+  autocomplete = new google.maps.places.Autocomplete(
+      (document.getElementById('cityname')),
+      { types: ['(cities)'] });
+  google.maps.event.addListener(autocomplete, 'place_changed', function() {
+	var place = autocomplete.getPlace();
+	var country;
+
+	var state;
+	var city=place.address_components[0].long_name;
+	//alert(city);
+	try
+	{
+	
+		 country=place.address_components[3].long_name;
+		 state=place.address_components[2].long_name;
+	}
+	catch(err)
+	{
+			
+		country=place.address_components[2].long_name;
+		state=place.address_components[1].long_name;
+	}
+
+	var a=document.getElementById("latrange").value;
+	var b=document.getElementById("altrange").value;
+	var c=document.getElementById("maxtemp").value;
+	var d=document.getElementById("mintemp").value;
+	var e=document.getElementById("radrange").value;
+
+
+
+
+
+
+
+window.open( "/page2.html?text="+encodeURIComponent(document.getElementById("cityname").value) +  "&city="+encodeURIComponent(city)+"&state="+encodeURIComponent(state)+"&country="+encodeURIComponent(country)+"&lat="+place.geometry.location.lat()+"&lng="+place.geometry.location.lng()+"&ltrange="+a+"&altrange="+b+"&maxtemp="+c+"&mintemp="+d+"&radrange="+e ,"_self");
+  });
+}
+
+
+
+function initialize2() {
+  autocomplete = new google.maps.places.Autocomplete(
+      (document.getElementById('cityname')),
+      { types: ['(cities)'] });
+  google.maps.event.addListener(autocomplete, 'place_changed', function() {
+	var place = autocomplete.getPlace();
+	var country;
+	var state;
+	var city=place.address_components[0].long_name;
+	try
+	{
+	
+		 country=place.address_components[3].long_name;
+		 state=place.address_components[2].long_name;
+	}
+	catch(err)
+	{
+			
+		country=place.address_components[2].long_name;
+		state=place.address_components[1].long_name;
+	}
+	alert("ok");
+        var lat=parselat(place.geometry.location.lat(),0);
+	var long=parselat(place.geometry.location.lng(),1);
+	var alt=ele(place.geometry.location.lat(),place.geometry.location.lng());
+	alt=Math.round(alt * 100) / 100;
+	document.getElementById("city").innerHTML=city+" , "+country+" " ;
+	document.getElementById("latitude").innerHTML=" "+lat+" , "+long+" "+alt+" Meters" ;
+/*	document.getElementById("long").innerHTML=long;
+	document.getElementById("alt").innerHTML=alt + " Meters";
+	document.getElementById("state").innerHTML=long;
+	document.getElementById("country").innerHTML=country;
+	document.getElementById("state").innerHTML=state;
+	document.getElementById("city").innerHTML=city;
+	drawmap(place.geometry.location.lat(),place.geometry.location.lng());	*/
+	var tt=getdata(place.geometry.location.lat(),place.geometry.location.lng(),alt);
+	climatedata=gowiki(city);
+	//alert("ok");
+	/*var a = document.getElementById("wikilink"); //or grab it by tagname etc
+	if(climatedata.length!=0)
+	{
+	
+
+		a.href = "http://en.wikipedia.org/wiki/"+city;
+
+	
+	}
+	else
+	{
+		a.href = "#";
+			
+	}*/
+	drawmainmap(place.geometry.location.lat(),place.geometry.location.lng(),tt,climatedata);
+   
+   
+  });
+}
+
+function refresh() {
+
+	
+	//var place = autocomplete.getPlace();
+        //var lat=parselat(place.geometry.location.lat(),0);
+	//var long=parselat(place.geometry.location.lng(),1);
+	var lat=parselat(parseFloat(getParameterByName('lat')),0);
+	var long=parselat(parseFloat(getParameterByName('lng')),1);
+	var alt=ele(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')));
+	alt=Math.round(alt * 100) / 100;
+
+	//var alt=ele(place.geometry.location.lat(),place.geometry.location.lng());
+	//alt=Math.round(alt * 100) / 100;
+	//drawmap(place.geometry.location.lat(),place.geometry.location.lng());
+	var tt=getdata(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),alt);
+	
+	drawmainmap(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),tt,climatedata);
+   
+}
+
+function geolocate() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var geolocation = new google.maps.LatLng(
+          position.coords.latitude, position.coords.longitude);
+      autocomplete.setBounds(new google.maps.LatLngBounds(geolocation,
+          geolocation));
+    });
+  }
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+
+
+
+
+</script>
+
+
+<script>
+var count=0;
+
+google.load("visualization", "1", {packages:["corechart"]});
+google.setOnLoadCallback(drawChart);
+var options;
+var chart;	
+	
+function drawChart() 
+{
+	 var data = google.visualization.arrayToDataTable([
+          ['Year', 'Min', 'Max'],
+          ['Jan',  14.7,      28.6],
+          ['Feb',  17.0,      31.8],
+          ['Mar',  20.3,      35.2],
+          ['Apr',  24.1,      37.6],
+          ['May',  26.0,      38.8],
+          ['Jun',  23.9,      34.4],
+          ['Jul',  22.5,      30.5],
+          ['Aug',  22.0,       29.6],
+          ['Sep',  21.7,       30.1],
+          ['Oct',  20.0,       30.4],
+          ['Nov',  16.4,       28.8],
+          ['Dec',  14.1,       27.8]
+        ]);
+       
+
+       options = {
+          title: 'Sample Temperature Varience',
+         backgroundColor: '#FFFFFF'
+        };
+
+         chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+
+       // chart.draw(data, options);
+}
+
+function drawmap(lat,lng)
+{
+var myCenter=new google.maps.LatLng(lat,lng);
+
+var mapProp = {
+  center:myCenter,
+  zoom:7,
+  mapTypeId:google.maps.MapTypeId.HYBRID
+  };
+
+var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);
+
+var marker=new google.maps.Marker({
+  position:myCenter,
+  });
+
+marker.setMap(map);
+}
+
+function bindInfoWindow(marker, map, infowindow, html) { 
+google.maps.event.addListener(marker, 'click', function() { 
+infowindow.setContent(html); 
+infowindow.open(map, marker);}); 
+} 
+
+
+
+var getindexdata=[];
+var getindexcity=[];
+function getindex(j,name)
+{
+	var newdata=[["year","Min","Max",name+"_Max",name+"_Min"]];
+	var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+	var i=0;
+	while(i<12)
+	{
+		x=[dates[i],parseFloat(getindexcity[i][1]),parseFloat(getindexcity[i][0]),parseFloat(getindexdata[j][i][0]),parseFloat(getindexdata[j][i][1])];
+		newdata.push(x);
+		i=i+1;
+	}
+	//alert(newdata);
+	drawChart1(newdata);
+
+}
+function drawtable(tabledata)
+{	count=count+1;
+	var i=0;
+	var maindata="<table id=\"myTable"+count+"\" class=\"tablesorter\"><thead> <tr><th>City Name</th><th>Country Name</th><th>RMS MAX</th><th>RMS Min</th><th>RMS Total</th></tr></thead><tbody>";
+	while(i<tabledata.length)
+	{
+		var template="<tr><td class=\"on\" onclick=\"getindex("+i+ ",'"+ tabledata[i][0]+"')\" "+ ">"+tabledata[i][0]+"</td><td>"+tabledata[i][1]+"</td><td>"+tabledata[i][2]+"</td><td>"+tabledata[i][3]+"</td><td>"+tabledata[i][4]+"</td></tr>";
+		maindata=maindata+template;
+		i=i+1;
+	}
+	document.getElementById("tablespace").innerHTML=maindata+"</tbody></table>";
+	
+	$("#myTable"+count).tablesorter(); 
+}
+
+
+function distance(lat1, lon1, lat2, lon2, unit) {
+
+    var radlat1 = Math.PI * lat1/180
+
+    var radlat2 = Math.PI * lat2/180
+
+    var radlon1 = Math.PI * lon1/180
+
+    var radlon2 = Math.PI * lon2/180
+
+    var theta = lon1-lon2
+
+    var radtheta = Math.PI * theta/180
+
+    var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+
+    dist = Math.acos(dist)
+
+    dist = dist * 180/Math.PI
+
+    dist = dist * 60 * 1.1515
+
+    if (unit=="K") { dist = dist * 1.609344 }
+
+    if (unit=="N") { dist = dist * 0.8684 }
+
+    return dist
+
+}
+
+
+
+
+
+function drawmainmap(lat,lng,matter,citydata)
+{	
+	var lnrange = parseFloat(document.getElementById("latrange").value);
+	var maxtemp = parseFloat(document.getElementById("maxtemp").value);
+	var mintemp = parseFloat(document.getElementById("mintemp").value);
+	var rad = parseFloat(document.getElementById("radrange").value);
+	var myCenter=new google.maps.LatLng(lat,lng);
+	var cmf=0;
+	if(citydata.length==0)
+	{
+		cmf=1;
+	}
+	var mapProp = {
+		  center:myCenter,
+  		  zoom:7,
+ 		  mapTypeId:google.maps.MapTypeId.HYBRID,
+		  
+		
+ 	 };
+
+	var map=new google.maps.Map(document.getElementById("chart_div2"),mapProp);
+
+	var marker=new google.maps.Marker({
+		  position:myCenter,
+icon:'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+	  });
+	marker.setMap(map);
+	var circle = new google.maps.Circle({
+                center: myCenter,
+                map:map,
+                radius:rad*1000,
+                strokeColor: "black",
+                strokeOpacity:0.4,
+                strokeWeight: 2,
+                fillColor: "black"
+            });
+            circle.bindTo('center',marker,'position');
+	i=0;
+	var tabledata=[];
+	while(i<matter.length)
+	{
+		var fl=1;
+		var myCenter=new google.maps.LatLng(matter[i].latitude,matter[i].longitude);
+		var marker=new google.maps.Marker({
+		  position:myCenter,});
+		
+		var the=[];
+		the.push([matter[i].mjan,matter[i].njan]);
+		the.push([matter[i].mfeb,matter[i].nfeb]);
+		the.push([matter[i].mmar,matter[i].nmar]);
+		the.push([matter[i].mapr,matter[i].napr]);
+		the.push([matter[i].mmay,matter[i].nmay]);
+		the.push([matter[i].mjun,matter[i].njun]);
+		the.push([matter[i].mjul,matter[i].njul]);
+		the.push([matter[i].maug,matter[i].naug]);
+		the.push([matter[i].msep,matter[i].nsep]);
+		the.push([matter[i].moct,matter[i].noct]);
+		the.push([matter[i].mnov,matter[i].nnov]);
+		the.push([matter[i].mdec,matter[i].ndec]);
+		if(cmf==1)
+		{
+			citydata=[];	
+			citydata.push([matter[i].mjan,matter[i].njan]);
+			citydata.push([matter[i].mfeb,matter[i].nfeb]);
+			citydata.push([matter[i].mmar,matter[i].nmar]);
+			citydata.push([matter[i].mapr,matter[i].napr]);
+			citydata.push([matter[i].mmay,matter[i].nmay]);
+			citydata.push([matter[i].mjun,matter[i].njun]);
+			citydata.push([matter[i].mjul,matter[i].njul]);
+			citydata.push([matter[i].maug,matter[i].naug]);
+			citydata.push([matter[i].msep,matter[i].nsep]);
+			citydata.push([matter[i].moct,matter[i].noct]);
+			citydata.push([matter[i].mnov,matter[i].nnov]);
+			citydata.push([matter[i].mdec,matter[i].ndec]);
+		}
+		
+		var arr=[];
+		var kk=0;
+		var rmsmax=[];
+		var rmsmin=[];
+		var rmstotal=[];
+
+		var ll=distance(lat,lng,parseFloat(matter[i].latitude),parseFloat(matter[i].longitude),"K");
+		
+		
+		while(kk<12)
+		{
+			if(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0]))<=maxtemp )
+
+			{
+				arr.push(1);
+			}
+			else
+			{
+				//alert([the[kk][0],citydata[kk][0]]);
+				arr.push(0);
+				fl=0;
+			}
+			rmsmax.push(Math.pow(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0])),2 ));
+			rmsmin.push(Math.pow(Math.abs(parseFloat(the[kk][1])-parseFloat(citydata[kk][1])),2 ));
+			rmstotal.push(Math.pow(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0])),2));
+			rmstotal.push(Math.pow(Math.abs(parseFloat(the[kk][1])-parseFloat(citydata[kk][1])),2));
+			kk=kk+1;
+		}
+		kk=0;
+		rmax=0;
+		rmin=0;
+		rtotal=0;
+		while(kk<12)
+		{
+			rmax=rmax+rmsmax[kk];
+			rmin=rmin+rmsmin[kk];
+			rtotal=rtotal+rmstotal[2*kk];
+			rtotal=rtotal+rmstotal[2*kk+1];
+			kk=kk+1;
+		}
+		rmax=Math.sqrt(rmax/12);
+		rmin=Math.sqrt(rmin/12);
+		rtotal=Math.sqrt(rtotal/24);
+		rmax=Math.round(rmax * 100) / 100;
+		rmin=Math.round(rmin * 100) / 100;
+		rtotal=Math.round(rtotal * 100) / 100;
+		
+		if(fl==1 && ll<=rad)
+		{
+			marker.setMap(map);
+			getindexdata.push(the);
+			if(cmf==0)
+			{
+				tabledata.push([matter[i].cityname,matter[i].countryname,rmax,rmin,rtotal]);
+			}
+			else
+			{
+				tabledata.push([matter[i].cityname,matter[i].countryname,"N/A","N/A","N/A"]);
+			}
+			var infowindow =  new google.maps.InfoWindow({content: '', 
+			maxWidth: 200 });
+			bindInfoWindow(marker, map, infowindow, "<p style=\" width:100px;color:black;font-width:bold\">" + matter[i].cityname + "</p>"); 
+		}
+		i=i+1;
+	}
+	var flightPlanCoordinates = [
+	new google.maps.LatLng(lat+lnrange, -179),
+	new google.maps.LatLng(lat+lnrange, 0.0),
+	new google.maps.LatLng(lat+lnrange, 179.027892)
+	];
+	var flightPath = new google.maps.Polyline({
+	path: flightPlanCoordinates,
+	strokeColor: '#FF0000',
+	strokeOpacity: 1.0,
+	strokeWeight: 1
+	});
+
+	flightPath.setMap(map);
+
+
+	var flightPlanCoordinates = [
+	new google.maps.LatLng(lat-lnrange, -179),
+	new google.maps.LatLng(lat-lnrange, 0.0),
+	new google.maps.LatLng(lat-lnrange, 179.027892)
+	];
+	var flightPath = new google.maps.Polyline({
+	path: flightPlanCoordinates,
+	strokeColor: '#FF0000',
+	strokeOpacity: 1.0,
+	strokeWeight: 1
+	});
+
+	flightPath.setMap(map);
+	drawtable(tabledata);
+}
+
+
+
+function getdata(lat,lng,alt)
+{
+	
+	 var latrange = parseFloat(document.getElementById("latrange").value);
+	 var altrange = parseFloat(document.getElementById("altrange").value);
+	 var postData = new Array();
+	 postData.push({name: 'latitude', value: lat});
+	 postData.push({name: 'altitude', value: alt});
+	postData.push({name: 'longitude', value: lng});
+	postData.push({name: 'latrange', value: latrange});
+	postData.push({name: 'altrange', value: altrange});
+	var dat;
+$.ajax({url : "/test",dataType:'json', async:false, type: "POST",data : postData, success:function(data, textStatus, jqXHR) {
+dat=data;
+}});
+return dat;
+
+//alert(dat);
+}
+
+
+
+
+
+
+
+function gowiki(cityname)
+{
+    cityname=cityname.replace(/ /g,"_");	
+    var stt=cityname;//document.getElementById("city").innerHTML;
+    var value=stt.toLowerCase();
+    var postData = new Array();
+    postData.push({name: 'cityname', value: value});
+   var sendarray=[];
+	
+$.ajax({url : "/submit1",type: "POST",data : postData,async: false,success:function(data, textStatus, jqXHR) 
+{		var maxtemp=[];
+		var mintemp=[];
+		var maxyearavg;
+		var minyearavg;
+		data=data.replace(/2212/g,"-");
+		data=data.replace(/\\u/g," ");
+		//alert(data);
+	
+		if(data.length<=2)
+		{
+			alert("data not available for the current city please try again.");
+			window.open( "/mainpage.html","_self");
+		}	
+		data=data.substring(1,data.length-1);
+		data=data.split(",");
+		if(data.length>1)
+		{
+			var i=0;
+			while(i<data.length)
+			{
+				if(i<12)
+				{	
+					maxtemp.push(data[i].substring(1,data[i].length-1));
+				}
+				else if(i==12)
+				{
+					 maxyearavg=data[i].substring(1,data[i].length-1);
+				}
+				else if(i<25)
+				{
+					mintemp.push(data[i].substring(1,data[i].length-1));
+				}
+				else
+				{
+					minyearavg=data[i].substring(1,data[i].length-1);
+				}
+				
+				i=i+1;
+			}
+			i=0;
+			var newdata=[["year","Min","Max"]];
+			var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+			
+			while(i<12)
+			{
+				var temp=[dates[i],parseFloat(mintemp[i]),parseFloat(maxtemp[i])];
+				var temp1=[parseFloat(maxtemp[i]),parseFloat(mintemp[i])]	
+				newdata.push(temp);
+				getindexcity.push(temp1);
+				sendarray.push(temp1);
+						
+				i=i+1;	
+			}
+			drawChart1(newdata); 
+			document.getElementById("temp").innerHTML=maxyearavg + "&deg;C / " +minyearavg + "&deg;C";
+			}
+			else
+			{
+				sendarray=[];
+				var newdata=[["year","Min","Max"]];
+				var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+				var i=0;
+				while(i<12)
+				{
+						newdata.push([dates[i],0,0]);
+						i=i+1;
+				}
+				drawChart1(newdata); 
+				document.getElementById("temp").innerHTML="Weather Data Not Available";
+			}
+			 }});
+		return sendarray;
+}
+	
+function drawChart1(temp) 
+{
+	
+	
+	var wd1 = google.visualization.arrayToDataTable(temp);  
+       
+
+       options = {
+          title: 'Tempareture Variation (degree C)',
+	   curveType: 'function',
+            legend: { position: 'bottom' }
+        };
+
+        chart.draw(wd1, options);
+}
+
+
+
+
+function getlat(link)
+{
+    /*var stt="http:"+link;
+     var postData = new Array();
+    postData.push({name: 'cityname', value: stt});
+    var val="aa";
+    var ans=0;
+$.ajax({url : "/submit",type: "POST",data : postData,async: false,success:function(data, textStatus, jqXHR) 
+{var lat,lon;
+		var start1=data.search("class=\"latitude\"");
+		var semi1=data.substring(start1,data.length);
+		var end1=semi1.search("</span>");
+		var semi2 = semi1.substring(0,end1);
+		var start3=semi2.search(">");
+		var semi3 = semi2.substring(start3+1,end1);
+		lat=semi3;
+		start1=data.search("class=\"longitude\"");
+		semi1=data.substring(start1,data.length);
+		end1=semi1.search("</span>");
+		semi2 = semi1.substring(0,end1);
+		start3=semi2.search(">");
+		semi3 = semi2.substring(start3+1,end1);
+		lon=semi3;
+		var alt=ele(lat,lon);
+		//alert(lat);
+		ans=([parseFloat(lat),parseFloat(lon),alt]);
+
+	}
+    });
+	return ans;*/
+}
+
+
+
+function ele(lat,lon)
+{
+    var stt="http://maps.googleapis.com/maps/api/elevation/json?locations="+lat+","+lon;
+    var postData = new Array();
+    postData.push({name: 'cityname', value: stt});
+    var ans=0;
+$.ajax(
+{url : "/submit",type: "POST",async: false,data : postData,success:function(data, textStatus, jqXHR) {var start=data.search("elevation");
+		var semi1=data.substring(start,data.length);
+		var end1=semi1.search(",");
+		var start1=semi1.search(":");
+		var fin=semi1.substring(start1+1,end1);
+		ans=parseFloat(fin);}});
+    	//alert (ans);
+	return ans;
+}
+
+
+</script>
+
+
+
+
+
+
+
+<body onload="calcu()" id="top">
+
+<div class="wrapper col2" >
+  
+  <div id="topbar" >
+    <div id="topnav" style="margin-right:-200px;">
+      <ul>
+        <li class="" style="font-size" ><h2 style="font-size:40px;border:none;margin-top:10px;margin-bottom:6px">Surrogate City Finder</h2></li>
+      </ul>
+    </div>
+        <br class="clear" />
+  </div>
+</div>
+
+
+
+<div class="wrapper col3" style="margin-bottom:10px;">
+  <div id="intro" style="padding-top:10px">
+    <div class="fl_left" id="place" style="padding:0px;width:100%;height:80px">
+    	<div class="fl_left" style="padding:0px;width:100%;background-color:rgba(0,0,0,0);height:100%;overflow:hidden">
+			<div style="padding:30px;height:500px;margin-bottom:10px;border-radius:10px;overflow-y:hidden" id="">
+				<div style="padding-bottom:20px;float:left"><span id="ms" style="border-bottom:none;font-size:24px;">Modify Search </span></div><div style=";float:right"><span style="text-align:right;font-size:22px;"> <span id="city"></span>  <span id="latitude" ></span><span id=""></span> </span></div>
+
+			<div style="float:left;width:100%;margin-bottom:18px;">	  
+      <p class="readmore" style="text-align:left;">
+	 <input type="text" id="cityname" style="width:50%;margin-left:25%;height:30px;border-radius:5px;background-color:#707070;color:#FFFFFF;border:none;padding:5px;font-size:20px;" />	
+ </div>  
+
+
+
+	        <div style="width:30%;float:left;padding-right:3%">
+		          <h5 style="border-bottom:solid 2px">Latitude and Altitude Range </h5>
+		  <p style="padding-bottom:10px"> Latitude (&deg;)  &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;: <input name="latrange"  id="latrange"  type="text" style="color:#000000;width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px"  value="10" class="master" /> </p>
+		    <p style="padding-bottom:10px"> Altitude (Meter) : <input name="altrange" id="altrange" type="text" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;color:#000000;border-radius:7px" value="50" /> </p>
+        </div>
+        <div style="width:30%;float:left;padding-right:3%">
+          <h5 style="border-bottom:solid 2px">Temperature Range</h5>
+		   <p style="padding-bottom:10px"> Avg High (&deg;C) : <input type="text" id="maxtemp" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px;color:#000000;" value="5" /> </p>
+		    <p style="padding-bottom:10px"> Avg Low&nbsp; (&deg;C) : <input id="mintemp" type="text" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px;color:#000000;" value="5" /> </p>
+        </div>
+        <div style="width:30%;float:left">
+          <h5 style="border-bottom:solid 2px;">Distance Range</h5>
+		   <p style="padding-bottom:25px"> Radius(KiloMeter) : <input type="text" id="radrange" value="500" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;color:#000000;border-radius:7px" /> </p>
+		    <p class="readmore" style="text-align:center;"><button style="padding:6px 13px;font-size:18px;color:#FFFFFF;background-color:#1C5E82;border:none" onclick="refresh()">Submit</button></p>
+		   
+        </div>
+
+
+	
+	    <br class="clear" />
+  </div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="width:100%;height:30px;background-color:rgba(0,0,0,0);float:left"></div>
+
+
+<div class="wrapper col3" id="map" style="margin-top:0px;height:460px;float:left">
+  <div id="intro" style="padding:0px;height:400px;">
+    <div class="fl_left" style="width:100%;padding:0px;height:460px;">
+	 <div class="fl_left" style="width:100%;padding:0px;background-color:rgba(0,0,0,0);height:400px;">
+			
+			<div style="padding:30px;height:400px;margin-bottom:10px;border-radius:10px;" id="chart_div2">
+		
+			
+			
+			</div>
+		</div>
+	  
+    </div>
+    <br class="clear" />
+  </div>
+</div>
+
+<div class="wrapper col3" id="chart" style="margin-top:20px;height:460px;float:left">
+  <div id="intro" style="padding:0px;height:400px;">
+    <div class="fl_left" style="width:100%;padding:0px;height:460px;">
+	 <div class="fl_left" style="width:100%;padding:0px;background-color:rgba(0,0,0,0);height:400px;">
+			
+			<div style="padding:30px;height:400px;margin-bottom:10px;border-radius:10px;" id="chartdiv">
+		
+			
+			
+			</div>
+		</div>
+	  
+    </div>
+    <br class="clear" />
+  </div>
+</div>
+
+
+
+<div class="wrapper col3" style="float:left;margin-bottom:100px;height:auto">
+  <div id="intro" style="height:auto">
+    <div class="fl_left" style="width:100%;padding:0px;height:auto;">
+	
+			
+			<div style="padding:30px;margin-bottom:10px;border-radius:10px;height:auto" id="tablespace">
+			
+			<table id="myTable" class="tablesorter" border="0"> 
+
+				<thead> 
+					<tr> 
+						<th>City Name</th> 
+						<th>Country Name</th> 
+						<th>RMS MAX</th> 
+						<th>RMS Min</th> 
+						<th>RMS Total</th> 
+					</tr> 
+				</thead> 
+				<tbody id="maindata"> 
+				</tbody> 
+			</table>
+			
+			
+		</div>
+	  
+    </div>
+    <br class="clear" />
+  </div>
+</div>
+
+
+
+
+
+
+<div id="loading">
+  <img id="loading-image" src="images/ajax-loader.gif" alt="Loading..." />
+</div>
+
+</body>
+</html>
