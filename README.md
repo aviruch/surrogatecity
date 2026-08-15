@@ -1,125 +1,97 @@
-# Surrogate City Finder — Python (Flask) Port
+# Surrogate City Finder — open-data edition
 
-A literal port of the original PHP project to Python. The frontend (HTML + jQuery +
-Google Maps) is unchanged; only the four PHP backend files were rewritten as Flask
-routes.
+Web tool from the BS2015 paper *"Surrogate City Finder — Weather Data Tool"*
+(Garg, Nikhil, Rallapalli, Bhatia, Subhash, Kasireddy — IIIT Hyderabad),
+rebuilt without any Google or Wikipedia dependencies. For a given location,
+it shortlists the best-matched EnergyPlus weather-file locations based on
+latitude, altitude, monthly temperature range and distance, ranks them by
+RMS temperature error, and shows them on a map with a comparison chart.
 
-## Project layout
+## What replaced what
 
-```
-cityfinder/
-├── app.py               # All backend logic (replaces back.php, ll.php, submit.php, submit1.php)
-├── requirements.txt
-├── templates/           # Served by Flask
-│   ├── mainpage.html    # Landing page — city autocomplete
-│   ├── page2.html       # Results page — map + chart + table
-│   ├── Autocomplete.html
-│   ├── tablesorter.html
-│   └── style-demo.html
-└── static/              # Served at /
-    ├── a.js             # jQuery 1.11.1
-    ├── jquery-latest.js
-    ├── jquery.tablesorter.js
-    └── im.png
-```
+| Before (2015)                         | Now                                          |
+|---------------------------------------|----------------------------------------------|
+| Google Maps + Places autocomplete     | Leaflet + OpenStreetMap tiles, Nominatim geocoding |
+| Google Charts                         | Chart.js                                     |
+| Google Elevation API                  | Open-Meteo Elevation API                     |
+| Wikipedia infobox scraping (brittle)  | Open-Meteo ERA5 monthly normals (2015–2024)  |
+| Missing `test.php` city database      | Bundled index of **17,640 EPW weather-file locations** (US-DOE + climate.onebuilding.org) with on-demand climate normals |
+| PHP backend                           | Flask (`app.py`)                             |
+
+No API keys are required anywhere. Nominatim and Open-Meteo are free,
+open services (please respect their fair-use policies).
 
 ## Setup
 
 ```bash
-cd cityfinder
 python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python app.py
 ```
 
-Then open http://localhost:8081/ in a browser.
+Open http://localhost:8081/ — search a location, adjust the filter ranges
+(latitude ±°, altitude ±m, avg high/low ±°C, radius km), submit.
 
-## Endpoint mapping
+**The first search in a new region takes up to a minute**: the backend
+fetches 10-year ERA5 daily data from Open-Meteo for each candidate station
+and reduces it to monthly mean-daily-max/min normals. Results are cached
+permanently in `data/climate_cache.sqlite`, so every later search in that
+region is instant.
 
-| Original PHP                                       | Flask route                    |
-|----------------------------------------------------|--------------------------------|
-| `back.php`                                         | `/back` (also `/back.php`)     |
-| `ll.php`                                           | `/ll` (also `/ll.php`)         |
-| `submit.php`                                       | `/submit` (also `/submit.php`) |
-| `submit1.php`                                      | `/submit1` (also `/submit1.php`) |
-| `test.php` *(was missing from upload — see below)* | `/test` (also `/finder/surrogate/test.php`) |
+## How it works
 
-Both the clean paths (`/submit1`) and the legacy `.php` paths are mounted, so any
-hardcoded URL in the frontend keeps working.
+1. `templates/mainpage.html` — Nominatim autocomplete picks the location
+   (lat/lon), filters are passed to the results page by query string
+   (same parameter names as the original tool).
+2. `GET /api/climate?lat&lon` — monthly normals + elevation of the input
+   location (Open-Meteo ERA5, cached).
+3. `POST /test` — candidate stations from `data/stations.csv` filtered by
+   latitude band, distance radius and altitude range; monthly normals
+   attached from cache or fetched. (Also mounted at the legacy path
+   `/finder/surrogate/test.php`.)
+4. `templates/page2.html` — applies the paper's monthly temperature filter
+   (every month's avg high/low within the chosen deviation), computes
+   RMS Max / RMS Min / RMS Total exactly as in the paper, and renders the
+   Leaflet map, Chart.js comparison chart and sortable results table.
+   Every result row links to the actual EPW weather file download.
 
-## Important: the missing `test.php`
+## Project layout
 
-The original `page2.html` calls a fifth PHP file at
-`http://localhost:8081/finder/surrogate/test.php` that was **not included** in
-the upload. That endpoint takes `latitude / longitude / altitude / latrange /
-altrange` and returns a JSON array of candidate cities with monthly temperature
-data — clearly backed by a database of cities and climate records.
-
-Without that database, the "find surrogate cities" feature cannot return real
-results. `app.py` includes a stub that returns `[]` so the page still loads
-cleanly. To make the full feature work, replace the `test_stub()` function in
-`app.py` with a real query against your city-climate data source. The expected
-response shape is a JSON array of objects like:
-
-```json
-[
-  {
-    "cityname": "Jaipur",
-    "countryname": "India",
-    "latitude": "26.9",
-    "longitude": "75.8",
-    "mjan": "22.8", "mfeb": "26.1", "mmar": "31.4", ...,
-    "njan": "8.3",  "nfeb": "11.1", "nmar": "16.3", ...
-  },
-  ...
-]
+```
+├── app.py                  # Flask backend (all endpoints)
+├── requirements.txt
+├── data/
+│   ├── stations.csv        # bundled EPW station index (17,640 locations)
+│   └── climate_cache.sqlite# created at runtime (Open-Meteo normals)
+├── scripts/
+│   └── seed_demo.py        # synthetic offline demo data (testing only)
+├── templates/
+│   ├── mainpage.html       # landing page — search + filters
+│   └── page2.html          # results — map + chart + table
+└── static/
+    └── style.css
 ```
 
-Fields `mjan..mdec` are monthly average highs and `njan..ndec` are monthly
-average lows (both in °C).
+`templates/Autocomplete.html`, `tablesorter.html`, `style-demo.html` and
+`static/a.js`, `jquery*.js` belonged to the old Google-Maps version and are
+no longer used — they can be deleted.
 
-## Fixes applied during porting
+## Offline demo mode (testing only)
 
-Two bugs in the original frontend were fixed because they prevented the app from
-working at all:
+```bash
+python scripts/seed_demo.py
+SCF_DEMO=1 python app.py        # Windows: set SCF_DEMO=1 && python app.py
+```
 
-1. **Query string separator**: the original `window.open(...)` in `mainpage.html`
-   and `page2.html` built URLs using `?` as a separator between every parameter
-   (`?city=...?state=...?country=...`) instead of `&`. Browsers treat everything
-   after the first `?` as a single parameter value, so only `text` was parseable
-   — `city`, `state`, `country`, `lat`, `lng`, etc. were silently lost. Changed
-   to `&` and wrapped values in `encodeURIComponent()`.
+Seeds a separate `data/demo_cache.sqlite` with synthetic data around
+Hyderabad (Hyderabad and Sholapur use real published normals, reproducing
+the paper's Table 2 reference pair) so the whole UI can be exercised with
+no internet. Never use demo mode for real work.
 
-2. **Hardcoded hostnames**: `localhost:8081/cityfinder2/*.php` URLs were changed
-   to relative paths (`/back`, `/submit1`, etc.) so the app works regardless of
-   where it's deployed.
+## Data sources & credits
 
-Everything else (including the Wikipedia scraping logic's fragility — see below)
-is a literal port.
-
-## Known fragility (inherited from the PHP)
-
-The Wikipedia-scraping endpoints (`/back`, `/ll`, `/submit1`) parse Wikipedia's
-infobox HTML by searching for literal strings like `"Average high"`, `"</th>"`,
-`"</tr>"`, and `'<span class="plainlinks nourlexpansion">'`. Wikipedia's
-infobox HTML has evolved since the original PHP was written, so:
-
-- Some cities will return an empty array or partial data.
-- The Celsius/Fahrenheit detection (which keys off `"Average high °F"` or the
-  `"°C)"` marker) depends on exact formatting that may no longer match.
-- `ll.php` is **hardcoded to Jaipur** — it ignores whatever city you send it.
-  That's a bug in the original, preserved here.
-
-If you want a reliable version, the right fix is to use Wikipedia's REST API
-(`https://en.wikipedia.org/api/rest_v1/page/html/{title}`) or a weather API
-(Open-Meteo has free historical climate data), but you asked for a literal
-port, so the brittle string parsing is intact.
-
-## Google Maps API key
-
-The frontend uses a Google Maps Places API key hardcoded in the HTML. Your
-original key was still embedded — if it no longer works, replace the `key=`
-parameter in the `<script src="https://maps.googleapis.com/maps/api/js?...">`
-tags in `mainpage.html`, `Autocomplete.html`, and `page2.html` with a current
-key.
+- Station index extracted from the [Ladybug Tools EPW map](https://github.com/ladybug-tools/epwmap)
+  (US-DOE EnergyPlus weather data + [climate.onebuilding.org](https://climate.onebuilding.org)).
+- Climate normals & elevation: [Open-Meteo](https://open-meteo.com/) (ERA5 reanalysis).
+- Geocoding: [Nominatim / OpenStreetMap](https://nominatim.org/).

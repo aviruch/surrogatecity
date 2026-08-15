@@ -1,77 +1,156 @@
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
-<head profile="http://gmpg.org/xfn/11">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Surrogate City Finder</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<meta http-equiv="imagetoolbar" content="no" />
-<link rel="stylesheet" href="styles/layout.css" type="text/css" />
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-
-
-<script src="https://maps.googleapis.com/maps/api/js?"></script>
+<link rel="stylesheet" href="/style.css" />
 </head>
-  
-  <body>
-  <div class="wrapper col3" style="margin-bottom:10px;margin-top:10%;height:200px">
-  
-  <div id="intro">
-    <div class="fl_left" style="width:100%">
-		<h2 id="city">Surrogate City Finder</h2>
-	<div style="float:left;width:100%;margin-top:50px;">	  
-      <p class="readmore" style="text-align:left;">
-      	<input type="text" id="cityname" style="width:50%;margin-left:25%;height:30px;border-radius:5px;background-color:#707070;color:#FFFFFF;border:none;padding:5px;font-size:20px;" />	
+<body>
 
-      	<!-- <a id ="wikilink" href="" style="display:none;border-radius:5px;height:30px" onclick="initialize()" >Search &raquo;</a></p> -->
-    
-</div>  
- 
- 
- </div>
-        <br class="clear" />
+<header class="topbar">
+  <h1><a href="/">Surrogate City Finder</a></h1>
+  <span class="sub">Find the best-matched weather file for any location</span>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h2>Where do you need weather data?</h2>
+    <p class="lead">Enter a location. The tool shortlists EnergyPlus weather-file
+    locations whose latitude, altitude and monthly temperatures best match it.</p>
+
+    <div class="searchwrap">
+      <input class="search" id="cityname" type="text" autocomplete="off"
+             placeholder="Enter a location&hellip;" />
+      <div class="suggestions" id="sugg"></div>
+    </div>
+
+    <div class="filters">
+      <fieldset>
+        <legend>Latitude &amp; Altitude Range</legend>
+        <label>Latitude (&deg;) <input id="latrange" type="number" value="10" step="any" /></label>
+        <label>Altitude (m) <input id="altrange" type="number" value="100" step="any" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Temperature Range</legend>
+        <label>Avg High (&deg;C) <input id="maxtemp" type="number" value="5" step="any" /></label>
+        <label>Avg Low (&deg;C) <input id="mintemp" type="number" value="5" step="any" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Distance Range</legend>
+        <label>Radius (km) <input id="radrange" type="number" value="500" step="any" /></label>
+        <div style="text-align:center;margin-top:14px">
+          <button class="primary" id="go" disabled>Submit</button>
+        </div>
+      </fieldset>
+    </div>
   </div>
 </div>
 
+<footer class="foot">
+  Geocoding &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (Nominatim)
+  &middot; Climate data: <a href="https://open-meteo.com/">Open-Meteo</a> (ERA5)
+  &middot; Weather files: US-DOE / climate.onebuilding.org
+</footer>
+
 <script>
-    var input = document.getElementById('cityname');
+(function () {
+  var input = document.getElementById('cityname');
+  var box = document.getElementById('sugg');
+  var goBtn = document.getElementById('go');
+  var selected = null;   // {name, state, country, lat, lon, label}
+  var timer = null;
+  var items = [];
+  var selIdx = -1;
 
-    
-    var autocomplete = new google.maps.places.Autocomplete(input,{types: ['(cities)']});
-    google.maps.event.addListener(autocomplete, 'place_changed', function(){
-        var place = autocomplete.getPlace();
+  function render() {
+    box.innerHTML = '';
+    items.forEach(function (it, i) {
+      var d = document.createElement('div');
+      d.innerHTML = '<b></b> <span class="muted"></span>';
+      d.firstChild.textContent = it.name;
+      d.lastChild.textContent = it.detail;
+      if (i === selIdx) d.classList.add('sel');
+      d.addEventListener('mousedown', function (ev) { ev.preventDefault(); choose(it); });
+      box.appendChild(d);
+    });
+    box.classList.toggle('open', items.length > 0);
+  }
 
-		var city = place.address_components[0].long_name;
-		//alert(city);
-		try
-	{
-	
-		 country=place.address_components[3].long_name;
-		 state=place.address_components[2].long_name;
-	}
-	catch(err)
-	{
-			
-		country=place.address_components[2].long_name;
-		state=place.address_components[1].long_name;
-	}
+  function choose(it) {
+    selected = it;
+    input.value = it.name + (it.country ? ', ' + it.country : '');
+    items = []; selIdx = -1; render();
+    goBtn.disabled = false;
+  }
 
-	var a=10;
-	var b=100;
-	var c=5;
-	var d=5;
-	var e=500;
-
-	window.open( "/page2.html?text="+encodeURIComponent(document.getElementById("cityname").value) +  "&city="+encodeURIComponent(city)+"&state="+encodeURIComponent(state)+"&country="+encodeURIComponent(country)+"&lat="+place.geometry.location.lat()+"&lng="+place.geometry.location.lng()+"&ltrange="+a+"&altrange="+b+"&maxtemp="+c+"&mintemp="+d+"&radrange="+e ,"_self");
-
+  function search(q) {
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&q=' +
+          encodeURIComponent(q), { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        items = data.map(function (item) {
+          var a = item.address || {};
+          var name = item.name || (item.display_name || '').split(',')[0];
+          return {
+            name: name,
+            state: a.state || a.province || a.county || '',
+            country: a.country || '',
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            detail: (item.display_name || '').split(',').slice(1).join(',').trim()
+          };
+        });
+        selIdx = -1;
+        render();
       })
+      .catch(function () { items = []; render(); });
+  }
 
-	
-	
-    </script>
-  </body>
+  input.addEventListener('input', function () {
+    selected = null; goBtn.disabled = true;
+    clearTimeout(timer);
+    var q = input.value.trim();
+    if (q.length < 2) { items = []; render(); return; }
+    timer = setTimeout(function () { search(q); }, 350);
+  });
+
+  input.addEventListener('keydown', function (ev) {
+    if (ev.key === 'ArrowDown') { selIdx = Math.min(selIdx + 1, items.length - 1); render(); ev.preventDefault(); }
+    else if (ev.key === 'ArrowUp') { selIdx = Math.max(selIdx - 1, 0); render(); ev.preventDefault(); }
+    else if (ev.key === 'Enter') {
+      if (selIdx >= 0 && items[selIdx]) choose(items[selIdx]);
+      else if (items.length) choose(items[0]);
+      else if (selected) go();
+      ev.preventDefault();
+    } else if (ev.key === 'Escape') { items = []; render(); }
+  });
+
+  document.addEventListener('click', function (ev) {
+    if (!box.contains(ev.target) && ev.target !== input) { items = []; render(); }
+  });
+
+  function val(id) { return document.getElementById(id).value; }
+
+  function go() {
+    if (!selected) return;
+    var qs = '/page2.html' +
+      '?text=' + encodeURIComponent(selected.name) +
+      '&city=' + encodeURIComponent(selected.name) +
+      '&state=' + encodeURIComponent(selected.state) +
+      '&country=' + encodeURIComponent(selected.country) +
+      '&lat=' + selected.lat +
+      '&lng=' + selected.lon +
+      '&ltrange=' + encodeURIComponent(val('latrange')) +
+      '&altrange=' + encodeURIComponent(val('altrange')) +
+      '&maxtemp=' + encodeURIComponent(val('maxtemp')) +
+      '&mintemp=' + encodeURIComponent(val('mintemp')) +
+      '&radrange=' + encodeURIComponent(val('radrange'));
+    window.location.href = qs;
+  }
+
+  goBtn.addEventListener('click', go);
+})();
+</script>
+</body>
 </html>
-
-
-
-
-

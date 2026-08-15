@@ -1,1003 +1,353 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
-<head profile="http://gmpg.org/xfn/11">
-<title>Surrogate City Finder</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<meta http-equiv="imagetoolbar" content="no" />
-<link rel="stylesheet" href="styles/layout.css" type="text/css" />
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-
-
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC2J30vnLOHzySl2hM9Fvxp0W_O0qQpNoI&sensor=false&libraries=places&language=en"></script>
-
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-
-<style>
-
-.pac-icon,.pac-icon-marker
-{
-	visibility:hidden;
-}
-#ms
-{
-	cursor:pointer;
-}
-.on
-{
-	cursor:pointer;
-}
-tr:hover {
-  background-color: grey;
-}
-.active 
-{
-background-color: green;
-}
-</style>
-
-
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Surrogate City Finder — Results</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="stylesheet" href="/vendor/leaflet.css" />
+<script src="/vendor/leaflet.js"></script>
+<script src="/vendor/chart.umd.js"></script>
 </head>
-<script language="javascript" type="text/javascript">
-  $(window).load(function() {
-    $('#loading').hide();
-  });
-</script>
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-<script src="a.js"></script>
+<body>
 
-  
-<script type="text/javascript" src="jquery-latest.js"></script> 
-<script type="text/javascript" src="jquery.tablesorter.js"></script> 
-<script >
+<header class="topbar">
+  <h1><a href="/">Surrogate City Finder</a></h1>
+  <span class="sub">Results</span>
+</header>
 
-		$(document).ready(function() 
-		{ 
-			//$("#myTable").tablesorter();
-			$("#ms").click(function(){
-				var hh=parseFloat(document.getElementById("place").style.height);
-					if(hh<200)
-				{
-  				  $("#place").animate({height:'335px'},750);
-					//document.getElementById("map").style.marginTop="375px";	
-					}
-					else
-{
+<div class="container">
 
-  				  $("#place").animate({height:'80px'},200);
-					//document.getElementById("map").style.marginTop="80px";	
-	
-}
- 				 });
+  <div class="card">
+    <div class="locbar">
+      <div>
+        <div class="locname" id="locname">&nbsp;</div>
+        <div class="locmeta" id="locmeta"></div>
+      </div>
+      <div class="loctemp" id="loctemp"></div>
+    </div>
+    <details class="modify">
+      <summary>Modify search</summary>
+      <div class="filters">
+        <fieldset>
+          <legend>Latitude &amp; Altitude Range</legend>
+          <label>Latitude (&deg;) <input id="latrange" type="number" step="any" /></label>
+          <label>Altitude (m) <input id="altrange" type="number" step="any" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Temperature Range</legend>
+          <label>Avg High (&deg;C) <input id="maxtemp" type="number" step="any" /></label>
+          <label>Avg Low (&deg;C) <input id="mintemp" type="number" step="any" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Distance Range</legend>
+          <label>Radius (km) <input id="radrange" type="number" step="any" /></label>
+          <div style="text-align:center;margin-top:14px">
+            <button class="primary" id="apply">Apply</button>
+          </div>
+        </fieldset>
+      </div>
+    </details>
+  </div>
 
+  <div class="card">
+    <div id="map"></div>
+  </div>
 
+  <div class="card">
+    <div class="chartwrap"><canvas id="chart"></canvas></div>
+    <p class="hint" id="charthint">Click a city in the table below to compare its temperature profile.</p>
+  </div>
 
+  <div class="card">
+    <div id="status" class="status"><span class="spinner"></span>Looking up climate data&hellip;</div>
+    <div style="overflow-x:auto">
+      <table class="results" id="results" style="display:none">
+        <thead>
+          <tr>
+            <th data-k="cityname">City <span class="arrow"></span></th>
+            <th data-k="countryname">Country <span class="arrow"></span></th>
+            <th data-k="distance_km">Distance (km) <span class="arrow"></span></th>
+            <th data-k="elevation">Elevation (m) <span class="arrow"></span></th>
+            <th data-k="rmsmax">RMS Max <span class="arrow"></span></th>
+            <th data-k="rmsmin">RMS Min <span class="arrow"></span></th>
+            <th data-k="rmstotal">RMS Total <span class="arrow"></span></th>
+            <th>Weather file</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
 
+</div>
 
- 
-		} 
-		);
-
-
-	</script>
-<style >
-		table.tablesorter {
-			
-		}
-		table.tablesorter th {
-		background-image: url(bg.png);
-		background-repeat: no-repeat;
-		color:#000000;
-			
-		}
-		table.tablesorter td {
-			
-		}
-		
-		
-		table.tablesorter .headerSortUp {
-			background-image: url(asc.png);
-			background-repeat: no-repeat;
-		}
-		table.tablesorter .headerSortDown {
-			background-image: url(desc.png);
-			background-repeat: no-repeat;
-			}</style>
-
-<style>
-
-
-
-#loading {
-  width: 100%;
-  height: 100%;
-  top: 0px;
-  left: 0px;
-  position: fixed;
-  display: block;
-  opacity: 0.7;
-  background-color: #fff;
-  z-index: 99;
-  text-align: center;
-}
-
-#loading-image {
-  position: absolute;
-  top: 100px;
-  left: 240px;
-  z-index: 100;
-}
-
-
-
-</style>
-
-
-
-<script type="text/javascript">
-
-
-
-function parselat(val,fl)
-{
-
-	val=parseFloat(val);
-	
-	var pf=0;
-	if(val<0)
-	{
-		pf=1;
-		val=val*-1;
-	}
-	
-	var vi=(parseInt(val));
-	var main=parseFloat((val-vi)*60.0/100.0);
-	vi=vi+main;
-	vi=Math.round(vi * 100) / 100;
-	//alert(vi);
-	if(pf==0 && fl==0)
-	{
-		vi=vi+"&deg;N";
-	}
-	if(pf==0 && fl==1)
-	{
-		vi=vi+"&deg;E";
-	}
-	if(pf==1 && fl==0)
-	{
-		vi=vi+"&deg;S";
-	}
-	if(pf==1 && fl==1)
-	{
-		vi=vi+"&deg;W";
-	}
-
-	return vi;
-}
-
-
-function getParameterByName(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-    var tt=decodeURIComponent(results[1].replace(/\+/g, " "));
-	tt=tt.split("?")[0];
-	return tt;
-}
-
-
-function calcu()
-{
-	document.getElementById("cityname").value=getParameterByName('text');
-	var country=getParameterByName('country');;
-	var state=getParameterByName('state');;
-	var city=getParameterByName('city');;
-
-	document.getElementById("latrange").value=getParameterByName('ltrange');
-	
-document.getElementById("altrange").value=getParameterByName('altrange');
-	document.getElementById("maxtemp").value=getParameterByName('maxtemp');
-	document.getElementById("mintemp").value=getParameterByName('mintemp');
-	document.getElementById("radrange").value=getParameterByName('radrange');
-
-
-
-	//alert(city);
-        var lat=parselat(parseFloat(getParameterByName('lat')),0);
-	var long=parselat(parseFloat(getParameterByName('lng')),1);
-	var alt=ele(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')));
-	alt=Math.round(alt * 100) / 100;
-	document.getElementById("city").innerHTML=city+" , "+country+" &nbsp; " ;
-	document.getElementById("latitude").innerHTML=" "+lat+","+long+" &nbsp;&nbsp;"+alt+" Meters" ;
-
-	var tt=getdata(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),alt);
-	climatedata=gowiki(city);
-	drawmainmap(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),tt,climatedata);
-   
-
-	
-}
-
-   
-
-var placeSearch, autocomplete;
-var componentForm = {
-  street_number: 'short_name',
-  route: 'long_name',
-  locality: 'long_name',
-  administrative_area_level_1: 'short_name',
-  country: 'long_name',
-  postal_code: 'short_name'
-};
-var climatedata;
-function initialize() {
-	  
-  autocomplete = new google.maps.places.Autocomplete(
-      (document.getElementById('cityname')),
-      { types: ['(cities)'] });
-  google.maps.event.addListener(autocomplete, 'place_changed', function() {
-	var place = autocomplete.getPlace();
-	var country;
-
-	var state;
-	var city=place.address_components[0].long_name;
-	//alert(city);
-	try
-	{
-	
-		 country=place.address_components[3].long_name;
-		 state=place.address_components[2].long_name;
-	}
-	catch(err)
-	{
-			
-		country=place.address_components[2].long_name;
-		state=place.address_components[1].long_name;
-	}
-
-	var a=document.getElementById("latrange").value;
-	var b=document.getElementById("altrange").value;
-	var c=document.getElementById("maxtemp").value;
-	var d=document.getElementById("mintemp").value;
-	var e=document.getElementById("radrange").value;
-
-
-
-
-
-
-
-window.open( "/page2.html?text="+encodeURIComponent(document.getElementById("cityname").value) +  "&city="+encodeURIComponent(city)+"&state="+encodeURIComponent(state)+"&country="+encodeURIComponent(country)+"&lat="+place.geometry.location.lat()+"&lng="+place.geometry.location.lng()+"&ltrange="+a+"&altrange="+b+"&maxtemp="+c+"&mintemp="+d+"&radrange="+e ,"_self");
-  });
-}
-
-
-
-function initialize2() {
-  autocomplete = new google.maps.places.Autocomplete(
-      (document.getElementById('cityname')),
-      { types: ['(cities)'] });
-  google.maps.event.addListener(autocomplete, 'place_changed', function() {
-	var place = autocomplete.getPlace();
-	var country;
-	var state;
-	var city=place.address_components[0].long_name;
-	try
-	{
-	
-		 country=place.address_components[3].long_name;
-		 state=place.address_components[2].long_name;
-	}
-	catch(err)
-	{
-			
-		country=place.address_components[2].long_name;
-		state=place.address_components[1].long_name;
-	}
-	alert("ok");
-        var lat=parselat(place.geometry.location.lat(),0);
-	var long=parselat(place.geometry.location.lng(),1);
-	var alt=ele(place.geometry.location.lat(),place.geometry.location.lng());
-	alt=Math.round(alt * 100) / 100;
-	document.getElementById("city").innerHTML=city+" , "+country+" " ;
-	document.getElementById("latitude").innerHTML=" "+lat+" , "+long+" "+alt+" Meters" ;
-/*	document.getElementById("long").innerHTML=long;
-	document.getElementById("alt").innerHTML=alt + " Meters";
-	document.getElementById("state").innerHTML=long;
-	document.getElementById("country").innerHTML=country;
-	document.getElementById("state").innerHTML=state;
-	document.getElementById("city").innerHTML=city;
-	drawmap(place.geometry.location.lat(),place.geometry.location.lng());	*/
-	var tt=getdata(place.geometry.location.lat(),place.geometry.location.lng(),alt);
-	climatedata=gowiki(city);
-	//alert("ok");
-	/*var a = document.getElementById("wikilink"); //or grab it by tagname etc
-	if(climatedata.length!=0)
-	{
-	
-
-		a.href = "http://en.wikipedia.org/wiki/"+city;
-
-	
-	}
-	else
-	{
-		a.href = "#";
-			
-	}*/
-	drawmainmap(place.geometry.location.lat(),place.geometry.location.lng(),tt,climatedata);
-   
-   
-  });
-}
-
-function refresh() {
-
-	
-	//var place = autocomplete.getPlace();
-        //var lat=parselat(place.geometry.location.lat(),0);
-	//var long=parselat(place.geometry.location.lng(),1);
-	var lat=parselat(parseFloat(getParameterByName('lat')),0);
-	var long=parselat(parseFloat(getParameterByName('lng')),1);
-	var alt=ele(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')));
-	alt=Math.round(alt * 100) / 100;
-
-	//var alt=ele(place.geometry.location.lat(),place.geometry.location.lng());
-	//alt=Math.round(alt * 100) / 100;
-	//drawmap(place.geometry.location.lat(),place.geometry.location.lng());
-	var tt=getdata(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),alt);
-	
-	drawmainmap(parseFloat(getParameterByName('lat')),parseFloat(getParameterByName('lng')),tt,climatedata);
-   
-}
-
-function geolocate() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var geolocation = new google.maps.LatLng(
-          position.coords.latitude, position.coords.longitude);
-      autocomplete.setBounds(new google.maps.LatLngBounds(geolocation,
-          geolocation));
-    });
-  }
-}
-
-google.maps.event.addDomListener(window, 'load', initialize);
-
-
-
-
-
-</script>
-
+<footer class="foot">
+  Map &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
+  &middot; Climate normals: <a href="https://open-meteo.com/">Open-Meteo</a> (ERA5, 2015&ndash;2024)
+  &middot; Weather files: US-DOE / climate.onebuilding.org
+</footer>
 
 <script>
-var count=0;
+(function () {
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MKEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var C_INPUT = '#2a78d6', C_SURR = '#eb6834';
 
-google.load("visualization", "1", {packages:["corechart"]});
-google.setOnLoadCallback(drawChart);
-var options;
-var chart;	
-	
-function drawChart() 
-{
-	 var data = google.visualization.arrayToDataTable([
-          ['Year', 'Min', 'Max'],
-          ['Jan',  14.7,      28.6],
-          ['Feb',  17.0,      31.8],
-          ['Mar',  20.3,      35.2],
-          ['Apr',  24.1,      37.6],
-          ['May',  26.0,      38.8],
-          ['Jun',  23.9,      34.4],
-          ['Jul',  22.5,      30.5],
-          ['Aug',  22.0,       29.6],
-          ['Sep',  21.7,       30.1],
-          ['Oct',  20.0,       30.4],
-          ['Nov',  16.4,       28.8],
-          ['Dec',  14.1,       27.8]
-        ]);
-       
+  function qp(name, dflt) {
+    var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.search);
+    if (!m) return dflt;
+    var v = decodeURIComponent(m[1].replace(/\+/g, ' '));
+    return v === '' ? dflt : v;
+  }
 
-       options = {
-          title: 'Sample Temperature Varience',
-         backgroundColor: '#FFFFFF'
-        };
+  var city = qp('city', qp('text', 'Location'));
+  var state = qp('state', '');
+  var country = qp('country', '');
+  var lat = parseFloat(qp('lat', '0'));
+  var lng = parseFloat(qp('lng', '0'));
+  var ltrange = parseFloat(qp('ltrange', '10'));
+  var altrange = parseFloat(qp('altrange', '100'));
+  var maxtemp = parseFloat(qp('maxtemp', '5'));
+  var mintemp = parseFloat(qp('mintemp', '5'));
+  var radrange = parseFloat(qp('radrange', '500'));
 
-         chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
-
-       // chart.draw(data, options);
-}
-
-function drawmap(lat,lng)
-{
-var myCenter=new google.maps.LatLng(lat,lng);
-
-var mapProp = {
-  center:myCenter,
-  zoom:7,
-  mapTypeId:google.maps.MapTypeId.HYBRID
-  };
-
-var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);
-
-var marker=new google.maps.Marker({
-  position:myCenter,
+  ['latrange','altrange','maxtemp','mintemp','radrange'].forEach(function (id) {
+    document.getElementById(id).value = { latrange: ltrange, altrange: altrange, maxtemp: maxtemp, mintemp: mintemp, radrange: radrange }[id];
   });
 
-marker.setMap(map);
-}
+  document.getElementById('apply').addEventListener('click', function () {
+    function v(id) { return encodeURIComponent(document.getElementById(id).value); }
+    location.href = '/page2.html?text=' + encodeURIComponent(qp('text', city)) +
+      '&city=' + encodeURIComponent(city) + '&state=' + encodeURIComponent(state) +
+      '&country=' + encodeURIComponent(country) + '&lat=' + lat + '&lng=' + lng +
+      '&ltrange=' + v('latrange') + '&altrange=' + v('altrange') +
+      '&maxtemp=' + v('maxtemp') + '&mintemp=' + v('mintemp') + '&radrange=' + v('radrange');
+  });
 
-function bindInfoWindow(marker, map, infowindow, html) { 
-google.maps.event.addListener(marker, 'click', function() { 
-infowindow.setContent(html); 
-infowindow.open(map, marker);}); 
-} 
+  function fmtCoord(v, isLon) {
+    var s = v < 0 ? (isLon ? 'W' : 'S') : (isLon ? 'E' : 'N');
+    return Math.abs(v).toFixed(2) + '°' + s;
+  }
 
+  document.getElementById('locname').textContent = city + (country ? ', ' + country : '');
+  document.getElementById('locmeta').textContent = fmtCoord(lat, false) + '  ' + fmtCoord(lng, true);
 
+  /* ---------------- map ----------------
+     Default layer is satellite imagery (no political boundaries are drawn),
+     so no international-boundary depiction issue arises. A street-map layer
+     remains available via the layer switcher. */
+  var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics', maxZoom: 19
+  });
+  var streets = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+  });
+  var map = L.map('map', { layers: [satellite] }).setView([lat, lng], 6);
+  L.control.layers({ 'Satellite (no boundaries)': satellite, 'Street map (OSM)': streets }).addTo(map);
 
-var getindexdata=[];
-var getindexcity=[];
-function getindex(j,name)
-{
-	var newdata=[["year","Min","Max",name+"_Max",name+"_Min"]];
-	var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-	var i=0;
-	while(i<12)
-	{
-		x=[dates[i],parseFloat(getindexcity[i][1]),parseFloat(getindexcity[i][0]),parseFloat(getindexdata[j][i][0]),parseFloat(getindexdata[j][i][1])];
-		newdata.push(x);
-		i=i+1;
-	}
-	//alert(newdata);
-	drawChart1(newdata);
+  L.circle([lat, lng], { color: '#ffffff', weight: 2, opacity: 0.8, fillColor: '#ffffff', fillOpacity: 0.08, radius: radrange * 1000 }).addTo(map);
+  [lat + ltrange, lat - ltrange].forEach(function (l) {
+    if (l > -90 && l < 90) L.polyline([[l, lng - 60], [l, lng + 60]], { color: '#ff5533', weight: 1.5, dashArray: '6 6', opacity: 0.85 }).addTo(map);
+  });
+  L.circleMarker([lat, lng], { radius: 9, color: '#fff', weight: 2, fillColor: C_INPUT, fillOpacity: 1 })
+    .addTo(map).bindPopup('<b>' + city + '</b><br>Input location');
 
-}
-function drawtable(tabledata)
-{	count=count+1;
-	var i=0;
-	var maindata="<table id=\"myTable"+count+"\" class=\"tablesorter\"><thead> <tr><th>City Name</th><th>Country Name</th><th>RMS MAX</th><th>RMS Min</th><th>RMS Total</th></tr></thead><tbody>";
-	while(i<tabledata.length)
-	{
-		var template="<tr><td class=\"on\" onclick=\"getindex("+i+ ",'"+ tabledata[i][0]+"')\" "+ ">"+tabledata[i][0]+"</td><td>"+tabledata[i][1]+"</td><td>"+tabledata[i][2]+"</td><td>"+tabledata[i][3]+"</td><td>"+tabledata[i][4]+"</td></tr>";
-		maindata=maindata+template;
-		i=i+1;
-	}
-	document.getElementById("tablespace").innerHTML=maindata+"</tbody></table>";
-	
-	$("#myTable"+count).tablesorter(); 
-}
+  var markers = {};
 
+  /* ---------------- chart ---------------- */
+  var chart = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: { labels: MONTHS, datasets: [
+      { label: city + ' Max', data: [], borderColor: C_INPUT, backgroundColor: C_INPUT, borderWidth: 2, pointRadius: 3, tension: 0.35 },
+      { label: city + ' Min', data: [], borderColor: C_INPUT, backgroundColor: C_INPUT, borderWidth: 2, borderDash: [6, 4], pointRadius: 3, tension: 0.35 },
+      { label: 'Surrogate Max', data: [], borderColor: C_SURR, backgroundColor: C_SURR, borderWidth: 2, pointRadius: 3, tension: 0.35, hidden: true },
+      { label: 'Surrogate Min', data: [], borderColor: C_SURR, backgroundColor: C_SURR, borderWidth: 2, borderDash: [6, 4], pointRadius: 3, tension: 0.35, hidden: true }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#52514e', usePointStyle: true, pointStyle: 'line' } },
+        title: { display: true, text: 'Temperature variation (°C)', color: '#0b0b0b', font: { size: 15, weight: '650' } },
+        tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + ' °C'; } } }
+      },
+      scales: {
+        x: { grid: { color: '#e1e0d9' }, ticks: { color: '#898781' } },
+        y: { grid: { color: '#e1e0d9' }, ticks: { color: '#898781', callback: function (v) { return v + '°'; } } }
+      }
+    }
+  });
 
-function distance(lat1, lon1, lat2, lon2, unit) {
+  /* ---------------- data ---------------- */
+  var statusEl = document.getElementById('status');
+  var inputClimate = null;   // {tmax:[], tmin:[], elevation}
+  var rows = [];             // enriched candidate rows
+  var activeIdx = -1;
 
-    var radlat1 = Math.PI * lat1/180
+  function setStatus(html, isErr) {
+    statusEl.innerHTML = html;
+    statusEl.className = 'status' + (isErr ? ' error' : '');
+    statusEl.style.display = html ? '' : 'none';
+  }
 
-    var radlat2 = Math.PI * lat2/180
+  function rms(a, b) {
+    var s = 0;
+    for (var i = 0; i < a.length; i++) s += Math.pow(a[i] - b[i], 2);
+    return Math.sqrt(s / a.length);
+  }
 
-    var radlon1 = Math.PI * lon1/180
+  fetch('/api/climate?lat=' + lat + '&lon=' + lng)
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; })
+    .then(function (cl) {
+      inputClimate = cl;
+      if (cl) {
+        document.getElementById('locmeta').textContent =
+          fmtCoord(lat, false) + '  ' + fmtCoord(lng, true) +
+          (cl.elevation != null ? '  ·  ' + Math.round(cl.elevation) + ' m' : '');
+        document.getElementById('loctemp').innerHTML =
+          'Annual avg high / low: <b>' + cl.avg_high.toFixed(1) + '°C</b> / <b>' + cl.avg_low.toFixed(1) + '°C</b>';
+        chart.data.datasets[0].data = cl.tmax;
+        chart.data.datasets[1].data = cl.tmin;
+        chart.update();
+      } else {
+        document.getElementById('loctemp').innerHTML = '<span class="pill">Climate data unavailable for the input location</span>';
+      }
+      setStatus('<span class="spinner"></span>Finding surrogate cities… first search in a new region can take a minute.');
+      var body = new URLSearchParams();
+      body.set('latitude', lat); body.set('longitude', lng);
+      if (cl && cl.elevation != null) body.set('altitude', cl.elevation);
+      body.set('latrange', ltrange); body.set('altrange', altrange);
+      body.set('radius', radrange);
+      return fetch('/test', { method: 'POST', body: body });
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (cands) { build(cands); })
+    .catch(function (e) { setStatus('Could not load surrogate candidates: ' + e, true); });
 
-    var radlon2 = Math.PI * lon2/180
-
-    var theta = lon1-lon2
-
-    var radtheta = Math.PI * theta/180
-
-    var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-
-    dist = Math.acos(dist)
-
-    dist = dist * 180/Math.PI
-
-    dist = dist * 60 * 1.1515
-
-    if (unit=="K") { dist = dist * 1.609344 }
-
-    if (unit=="N") { dist = dist * 0.8684 }
-
-    return dist
-
-}
-
-
-
-
-
-function drawmainmap(lat,lng,matter,citydata)
-{	
-	var lnrange = parseFloat(document.getElementById("latrange").value);
-	var maxtemp = parseFloat(document.getElementById("maxtemp").value);
-	var mintemp = parseFloat(document.getElementById("mintemp").value);
-	var rad = parseFloat(document.getElementById("radrange").value);
-	var myCenter=new google.maps.LatLng(lat,lng);
-	var cmf=0;
-	if(citydata.length==0)
-	{
-		cmf=1;
-	}
-	var mapProp = {
-		  center:myCenter,
-  		  zoom:7,
- 		  mapTypeId:google.maps.MapTypeId.HYBRID,
-		  
-		
- 	 };
-
-	var map=new google.maps.Map(document.getElementById("chart_div2"),mapProp);
-
-	var marker=new google.maps.Marker({
-		  position:myCenter,
-icon:'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-	  });
-	marker.setMap(map);
-	var circle = new google.maps.Circle({
-                center: myCenter,
-                map:map,
-                radius:rad*1000,
-                strokeColor: "black",
-                strokeOpacity:0.4,
-                strokeWeight: 2,
-                fillColor: "black"
-            });
-            circle.bindTo('center',marker,'position');
-	i=0;
-	var tabledata=[];
-	while(i<matter.length)
-	{
-		var fl=1;
-		var myCenter=new google.maps.LatLng(matter[i].latitude,matter[i].longitude);
-		var marker=new google.maps.Marker({
-		  position:myCenter,});
-		
-		var the=[];
-		the.push([matter[i].mjan,matter[i].njan]);
-		the.push([matter[i].mfeb,matter[i].nfeb]);
-		the.push([matter[i].mmar,matter[i].nmar]);
-		the.push([matter[i].mapr,matter[i].napr]);
-		the.push([matter[i].mmay,matter[i].nmay]);
-		the.push([matter[i].mjun,matter[i].njun]);
-		the.push([matter[i].mjul,matter[i].njul]);
-		the.push([matter[i].maug,matter[i].naug]);
-		the.push([matter[i].msep,matter[i].nsep]);
-		the.push([matter[i].moct,matter[i].noct]);
-		the.push([matter[i].mnov,matter[i].nnov]);
-		the.push([matter[i].mdec,matter[i].ndec]);
-		if(cmf==1)
-		{
-			citydata=[];	
-			citydata.push([matter[i].mjan,matter[i].njan]);
-			citydata.push([matter[i].mfeb,matter[i].nfeb]);
-			citydata.push([matter[i].mmar,matter[i].nmar]);
-			citydata.push([matter[i].mapr,matter[i].napr]);
-			citydata.push([matter[i].mmay,matter[i].nmay]);
-			citydata.push([matter[i].mjun,matter[i].njun]);
-			citydata.push([matter[i].mjul,matter[i].njul]);
-			citydata.push([matter[i].maug,matter[i].naug]);
-			citydata.push([matter[i].msep,matter[i].nsep]);
-			citydata.push([matter[i].moct,matter[i].noct]);
-			citydata.push([matter[i].mnov,matter[i].nnov]);
-			citydata.push([matter[i].mdec,matter[i].ndec]);
-		}
-		
-		var arr=[];
-		var kk=0;
-		var rmsmax=[];
-		var rmsmin=[];
-		var rmstotal=[];
-
-		var ll=distance(lat,lng,parseFloat(matter[i].latitude),parseFloat(matter[i].longitude),"K");
-		
-		
-		while(kk<12)
-		{
-			if(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0]))<=maxtemp )
-
-			{
-				arr.push(1);
-			}
-			else
-			{
-				//alert([the[kk][0],citydata[kk][0]]);
-				arr.push(0);
-				fl=0;
-			}
-			rmsmax.push(Math.pow(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0])),2 ));
-			rmsmin.push(Math.pow(Math.abs(parseFloat(the[kk][1])-parseFloat(citydata[kk][1])),2 ));
-			rmstotal.push(Math.pow(Math.abs(parseFloat(the[kk][0])-parseFloat(citydata[kk][0])),2));
-			rmstotal.push(Math.pow(Math.abs(parseFloat(the[kk][1])-parseFloat(citydata[kk][1])),2));
-			kk=kk+1;
-		}
-		kk=0;
-		rmax=0;
-		rmin=0;
-		rtotal=0;
-		while(kk<12)
-		{
-			rmax=rmax+rmsmax[kk];
-			rmin=rmin+rmsmin[kk];
-			rtotal=rtotal+rmstotal[2*kk];
-			rtotal=rtotal+rmstotal[2*kk+1];
-			kk=kk+1;
-		}
-		rmax=Math.sqrt(rmax/12);
-		rmin=Math.sqrt(rmin/12);
-		rtotal=Math.sqrt(rtotal/24);
-		rmax=Math.round(rmax * 100) / 100;
-		rmin=Math.round(rmin * 100) / 100;
-		rtotal=Math.round(rtotal * 100) / 100;
-		
-		if(fl==1 && ll<=rad)
-		{
-			marker.setMap(map);
-			getindexdata.push(the);
-			if(cmf==0)
-			{
-				tabledata.push([matter[i].cityname,matter[i].countryname,rmax,rmin,rtotal]);
-			}
-			else
-			{
-				tabledata.push([matter[i].cityname,matter[i].countryname,"N/A","N/A","N/A"]);
-			}
-			var infowindow =  new google.maps.InfoWindow({content: '', 
-			maxWidth: 200 });
-			bindInfoWindow(marker, map, infowindow, "<p style=\" width:100px;color:black;font-width:bold\">" + matter[i].cityname + "</p>"); 
-		}
-		i=i+1;
-	}
-	var flightPlanCoordinates = [
-	new google.maps.LatLng(lat+lnrange, -179),
-	new google.maps.LatLng(lat+lnrange, 0.0),
-	new google.maps.LatLng(lat+lnrange, 179.027892)
-	];
-	var flightPath = new google.maps.Polyline({
-	path: flightPlanCoordinates,
-	strokeColor: '#FF0000',
-	strokeOpacity: 1.0,
-	strokeWeight: 1
-	});
-
-	flightPath.setMap(map);
-
-
-	var flightPlanCoordinates = [
-	new google.maps.LatLng(lat-lnrange, -179),
-	new google.maps.LatLng(lat-lnrange, 0.0),
-	new google.maps.LatLng(lat-lnrange, 179.027892)
-	];
-	var flightPath = new google.maps.Polyline({
-	path: flightPlanCoordinates,
-	strokeColor: '#FF0000',
-	strokeOpacity: 1.0,
-	strokeWeight: 1
-	});
-
-	flightPath.setMap(map);
-	drawtable(tabledata);
-}
-
-
-
-function getdata(lat,lng,alt)
-{
-	
-	 var latrange = parseFloat(document.getElementById("latrange").value);
-	 var altrange = parseFloat(document.getElementById("altrange").value);
-	 var postData = new Array();
-	 postData.push({name: 'latitude', value: lat});
-	 postData.push({name: 'altitude', value: alt});
-	postData.push({name: 'longitude', value: lng});
-	postData.push({name: 'latrange', value: latrange});
-	postData.push({name: 'altrange', value: altrange});
-	var dat;
-$.ajax({url : "/test",dataType:'json', async:false, type: "POST",data : postData, success:function(data, textStatus, jqXHR) {
-dat=data;
-}});
-return dat;
-
-//alert(dat);
-}
-
-
-
-
-
-
-
-function gowiki(cityname)
-{
-    cityname=cityname.replace(/ /g,"_");	
-    var stt=cityname;//document.getElementById("city").innerHTML;
-    var value=stt.toLowerCase();
-    var postData = new Array();
-    postData.push({name: 'cityname', value: value});
-   var sendarray=[];
-	
-$.ajax({url : "/submit1",type: "POST",data : postData,async: false,success:function(data, textStatus, jqXHR) 
-{		var maxtemp=[];
-		var mintemp=[];
-		var maxyearavg;
-		var minyearavg;
-		data=data.replace(/2212/g,"-");
-		data=data.replace(/\\u/g," ");
-		//alert(data);
-	
-		if(data.length<=2)
-		{
-			alert("data not available for the current city please try again.");
-			window.open( "/mainpage.html","_self");
-		}	
-		data=data.substring(1,data.length-1);
-		data=data.split(",");
-		if(data.length>1)
-		{
-			var i=0;
-			while(i<data.length)
-			{
-				if(i<12)
-				{	
-					maxtemp.push(data[i].substring(1,data[i].length-1));
-				}
-				else if(i==12)
-				{
-					 maxyearavg=data[i].substring(1,data[i].length-1);
-				}
-				else if(i<25)
-				{
-					mintemp.push(data[i].substring(1,data[i].length-1));
-				}
-				else
-				{
-					minyearavg=data[i].substring(1,data[i].length-1);
-				}
-				
-				i=i+1;
-			}
-			i=0;
-			var newdata=[["year","Min","Max"]];
-			var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-			
-			while(i<12)
-			{
-				var temp=[dates[i],parseFloat(mintemp[i]),parseFloat(maxtemp[i])];
-				var temp1=[parseFloat(maxtemp[i]),parseFloat(mintemp[i])]	
-				newdata.push(temp);
-				getindexcity.push(temp1);
-				sendarray.push(temp1);
-						
-				i=i+1;	
-			}
-			drawChart1(newdata); 
-			document.getElementById("temp").innerHTML=maxyearavg + "&deg;C / " +minyearavg + "&deg;C";
-			}
-			else
-			{
-				sendarray=[];
-				var newdata=[["year","Min","Max"]];
-				var dates=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-				var i=0;
-				while(i<12)
-				{
-						newdata.push([dates[i],0,0]);
-						i=i+1;
-				}
-				drawChart1(newdata); 
-				document.getElementById("temp").innerHTML="Weather Data Not Available";
-			}
-			 }});
-		return sendarray;
-}
-	
-function drawChart1(temp) 
-{
-	
-	
-	var wd1 = google.visualization.arrayToDataTable(temp);  
-       
-
-       options = {
-          title: 'Tempareture Variation (degree C)',
-	   curveType: 'function',
-            legend: { position: 'bottom' }
-        };
-
-        chart.draw(wd1, options);
-}
-
-
-
-
-function getlat(link)
-{
-    /*var stt="http:"+link;
-     var postData = new Array();
-    postData.push({name: 'cityname', value: stt});
-    var val="aa";
-    var ans=0;
-$.ajax({url : "/submit",type: "POST",data : postData,async: false,success:function(data, textStatus, jqXHR) 
-{var lat,lon;
-		var start1=data.search("class=\"latitude\"");
-		var semi1=data.substring(start1,data.length);
-		var end1=semi1.search("</span>");
-		var semi2 = semi1.substring(0,end1);
-		var start3=semi2.search(">");
-		var semi3 = semi2.substring(start3+1,end1);
-		lat=semi3;
-		start1=data.search("class=\"longitude\"");
-		semi1=data.substring(start1,data.length);
-		end1=semi1.search("</span>");
-		semi2 = semi1.substring(0,end1);
-		start3=semi2.search(">");
-		semi3 = semi2.substring(start3+1,end1);
-		lon=semi3;
-		var alt=ele(lat,lon);
-		//alert(lat);
-		ans=([parseFloat(lat),parseFloat(lon),alt]);
-
-	}
+  function build(cands) {
+    rows = [];
+    cands.forEach(function (c) {
+      var tmax = MKEYS.map(function (k) { return parseFloat(c['m' + k]); });
+      var tmin = MKEYS.map(function (k) { return parseFloat(c['n' + k]); });
+      if (tmax.some(isNaN) || tmin.some(isNaN)) return;
+      var row = {
+        cityname: c.cityname, countryname: c.countryname,
+        lat: parseFloat(c.latitude), lon: parseFloat(c.longitude),
+        elevation: c.elevation, distance_km: c.distance_km,
+        source: c.source, epw_url: c.epw_url, tmax: tmax, tmin: tmin,
+        rmsmax: null, rmsmin: null, rmstotal: null
+      };
+      if (inputClimate) {
+        // paper's filter: every month within the allowed high/low deviation
+        for (var i = 0; i < 12; i++) {
+          if (Math.abs(tmax[i] - inputClimate.tmax[i]) > maxtemp) return;
+          if (Math.abs(tmin[i] - inputClimate.tmin[i]) > mintemp) return;
+        }
+        row.rmsmax = rms(tmax, inputClimate.tmax);
+        row.rmsmin = rms(tmin, inputClimate.tmin);
+        row.rmstotal = rms(tmax.concat(tmin), inputClimate.tmax.concat(inputClimate.tmin));
+      }
+      rows.push(row);
     });
-	return ans;*/
-}
 
+    sortKey = inputClimate ? 'rmstotal' : 'distance_km';
+    sortAsc = true;
+    sortRows();
+    renderTable();
+    renderMarkers();
 
+    if (!rows.length) {
+      setStatus('No surrogate cities matched the current filters. Try widening the latitude, altitude, temperature or distance ranges via “Modify search”.', false);
+    } else {
+      setStatus('');
+      document.getElementById('results').style.display = '';
+    }
+  }
 
-function ele(lat,lon)
-{
-    var stt="http://maps.googleapis.com/maps/api/elevation/json?locations="+lat+","+lon;
-    var postData = new Array();
-    postData.push({name: 'cityname', value: stt});
-    var ans=0;
-$.ajax(
-{url : "/submit",type: "POST",async: false,data : postData,success:function(data, textStatus, jqXHR) {var start=data.search("elevation");
-		var semi1=data.substring(start,data.length);
-		var end1=semi1.search(",");
-		var start1=semi1.search(":");
-		var fin=semi1.substring(start1+1,end1);
-		ans=parseFloat(fin);}});
-    	//alert (ans);
-	return ans;
-}
+  /* ---------------- table ---------------- */
+  var sortKey = 'rmstotal', sortAsc = true;
 
+  function sortRows() {
+    rows.sort(function (a, b) {
+      var x = a[sortKey], y = b[sortKey];
+      if (x == null) return 1;
+      if (y == null) return -1;
+      if (typeof x === 'string') return sortAsc ? x.localeCompare(y) : y.localeCompare(x);
+      return sortAsc ? x - y : y - x;
+    });
+  }
 
+  function fmt(v) { return v == null ? 'N/A' : (typeof v === 'number' ? v.toFixed(2) : v); }
+
+  function renderTable() {
+    var tb = document.getElementById('tbody');
+    tb.innerHTML = '';
+    rows.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td></td><td></td>' +
+        '<td>' + (r.distance_km != null ? r.distance_km.toFixed(0) : 'N/A') + '</td>' +
+        '<td>' + (r.elevation != null ? Math.round(r.elevation) : 'N/A') + '</td>' +
+        '<td>' + fmt(r.rmsmax) + '</td><td>' + fmt(r.rmsmin) + '</td><td>' + fmt(r.rmstotal) + '</td>' +
+        '<td><a href="' + r.epw_url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">EPW ⤓</a> <span class="pill">' + r.source + '</span></td>';
+      tr.cells[0].textContent = r.cityname;
+      tr.cells[1].textContent = r.countryname;
+      if (i === activeIdx) tr.classList.add('active');
+      tr.addEventListener('click', function () { selectRow(i); });
+      tb.appendChild(tr);
+    });
+    document.querySelectorAll('#results th[data-k]').forEach(function (th) {
+      th.querySelector('.arrow').textContent = th.dataset.k === sortKey ? (sortAsc ? '▲' : '▼') : '';
+    });
+  }
+
+  document.querySelectorAll('#results th[data-k]').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var k = th.dataset.k;
+      if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = true; }
+      var active = activeIdx >= 0 ? rows[activeIdx] : null;
+      sortRows();
+      activeIdx = active ? rows.indexOf(active) : -1;
+      renderTable();
+    });
+  });
+
+  /* ---------------- markers & selection ---------------- */
+  function renderMarkers() {
+    rows.forEach(function (r, i) {
+      var m = L.circleMarker([r.lat, r.lon], { radius: 6, color: '#fff', weight: 1.5, fillColor: C_SURR, fillOpacity: 0.9 }).addTo(map);
+      m.bindPopup('<b>' + r.cityname + '</b>, ' + r.countryname +
+        (r.rmstotal != null ? '<br>RMS total: ' + r.rmstotal.toFixed(2) + ' °C' : '') +
+        '<br><a href="' + r.epw_url + '" target="_blank" rel="noopener">Download EPW</a>');
+      m.on('click', function () { selectRow(rows.indexOf(r)); });
+      markers[r.cityname + '|' + r.lat] = m;
+    });
+    if (rows.length) {
+      var pts = rows.map(function (r) { return [r.lat, r.lon]; });
+      pts.push([lat, lng]);
+      map.fitBounds(L.latLngBounds(pts).pad(0.2));
+    }
+  }
+
+  function selectRow(i) {
+    activeIdx = i;
+    var r = rows[i];
+    chart.data.datasets[2].label = r.cityname + ' Max';
+    chart.data.datasets[3].label = r.cityname + ' Min';
+    chart.data.datasets[2].data = r.tmax;
+    chart.data.datasets[3].data = r.tmin;
+    chart.data.datasets[2].hidden = false;
+    chart.data.datasets[3].hidden = false;
+    chart.update();
+    document.getElementById('charthint').textContent =
+      'Comparing ' + city + ' with ' + r.cityname + (r.rmstotal != null ? ' (RMS total ' + r.rmstotal.toFixed(2) + ' °C)' : '') + '.';
+    renderTable();
+    var m = markers[r.cityname + '|' + r.lat];
+    if (m) m.openPopup();
+  }
+})();
 </script>
-
-
-
-
-
-
-
-<body onload="calcu()" id="top">
-
-<div class="wrapper col2" >
-  
-  <div id="topbar" >
-    <div id="topnav" style="margin-right:-200px;">
-      <ul>
-        <li class="" style="font-size" ><h2 style="font-size:40px;border:none;margin-top:10px;margin-bottom:6px">Surrogate City Finder</h2></li>
-      </ul>
-    </div>
-        <br class="clear" />
-  </div>
-</div>
-
-
-
-<div class="wrapper col3" style="margin-bottom:10px;">
-  <div id="intro" style="padding-top:10px">
-    <div class="fl_left" id="place" style="padding:0px;width:100%;height:80px">
-    	<div class="fl_left" style="padding:0px;width:100%;background-color:rgba(0,0,0,0);height:100%;overflow:hidden">
-			<div style="padding:30px;height:500px;margin-bottom:10px;border-radius:10px;overflow-y:hidden" id="">
-				<div style="padding-bottom:20px;float:left"><span id="ms" style="border-bottom:none;font-size:24px;">Modify Search </span></div><div style=";float:right"><span style="text-align:right;font-size:22px;"> <span id="city"></span>  <span id="latitude" ></span><span id=""></span> </span></div>
-
-			<div style="float:left;width:100%;margin-bottom:18px;">	  
-      <p class="readmore" style="text-align:left;">
-	 <input type="text" id="cityname" style="width:50%;margin-left:25%;height:30px;border-radius:5px;background-color:#707070;color:#FFFFFF;border:none;padding:5px;font-size:20px;" />	
- </div>  
-
-
-
-	        <div style="width:30%;float:left;padding-right:3%">
-		          <h5 style="border-bottom:solid 2px">Latitude and Altitude Range </h5>
-		  <p style="padding-bottom:10px"> Latitude (&deg;)  &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;: <input name="latrange"  id="latrange"  type="text" style="color:#000000;width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px"  value="10" class="master" /> </p>
-		    <p style="padding-bottom:10px"> Altitude (Meter) : <input name="altrange" id="altrange" type="text" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;color:#000000;border-radius:7px" value="50" /> </p>
-        </div>
-        <div style="width:30%;float:left;padding-right:3%">
-          <h5 style="border-bottom:solid 2px">Temperature Range</h5>
-		   <p style="padding-bottom:10px"> Avg High (&deg;C) : <input type="text" id="maxtemp" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px;color:#000000;" value="5" /> </p>
-		    <p style="padding-bottom:10px"> Avg Low&nbsp; (&deg;C) : <input id="mintemp" type="text" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;border-radius:7px;color:#000000;" value="5" /> </p>
-        </div>
-        <div style="width:30%;float:left">
-          <h5 style="border-bottom:solid 2px;">Distance Range</h5>
-		   <p style="padding-bottom:25px"> Radius(KiloMeter) : <input type="text" id="radrange" value="500" style="width:85px;height:20px;border:none;padding:3px;background-color:#CACACA;color:#000000;border-radius:7px" /> </p>
-		    <p class="readmore" style="text-align:center;"><button style="padding:6px 13px;font-size:18px;color:#FFFFFF;background-color:#1C5E82;border:none" onclick="refresh()">Submit</button></p>
-		   
-        </div>
-
-
-	
-	    <br class="clear" />
-  </div>
-</div>
-</div>
-</div>
-</div>
-
-<div style="width:100%;height:30px;background-color:rgba(0,0,0,0);float:left"></div>
-
-
-<div class="wrapper col3" id="map" style="margin-top:0px;height:460px;float:left">
-  <div id="intro" style="padding:0px;height:400px;">
-    <div class="fl_left" style="width:100%;padding:0px;height:460px;">
-	 <div class="fl_left" style="width:100%;padding:0px;background-color:rgba(0,0,0,0);height:400px;">
-			
-			<div style="padding:30px;height:400px;margin-bottom:10px;border-radius:10px;" id="chart_div2">
-		
-			
-			
-			</div>
-		</div>
-	  
-    </div>
-    <br class="clear" />
-  </div>
-</div>
-
-<div class="wrapper col3" id="chart" style="margin-top:20px;height:460px;float:left">
-  <div id="intro" style="padding:0px;height:400px;">
-    <div class="fl_left" style="width:100%;padding:0px;height:460px;">
-	 <div class="fl_left" style="width:100%;padding:0px;background-color:rgba(0,0,0,0);height:400px;">
-			
-			<div style="padding:30px;height:400px;margin-bottom:10px;border-radius:10px;" id="chartdiv">
-		
-			
-			
-			</div>
-		</div>
-	  
-    </div>
-    <br class="clear" />
-  </div>
-</div>
-
-
-
-<div class="wrapper col3" style="float:left;margin-bottom:100px;height:auto">
-  <div id="intro" style="height:auto">
-    <div class="fl_left" style="width:100%;padding:0px;height:auto;">
-	
-			
-			<div style="padding:30px;margin-bottom:10px;border-radius:10px;height:auto" id="tablespace">
-			
-			<table id="myTable" class="tablesorter" border="0"> 
-
-				<thead> 
-					<tr> 
-						<th>City Name</th> 
-						<th>Country Name</th> 
-						<th>RMS MAX</th> 
-						<th>RMS Min</th> 
-						<th>RMS Total</th> 
-					</tr> 
-				</thead> 
-				<tbody id="maindata"> 
-				</tbody> 
-			</table>
-			
-			
-		</div>
-	  
-    </div>
-    <br class="clear" />
-  </div>
-</div>
-
-
-
-
-
-
-<div id="loading">
-  <img id="loading-image" src="images/ajax-loader.gif" alt="Loading..." />
-</div>
-
 </body>
 </html>
